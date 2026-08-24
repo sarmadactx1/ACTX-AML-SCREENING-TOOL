@@ -2,9 +2,9 @@ services:
   - type: web
     name: actx-screening
     env: python
-    plan: starter
+    plan: free
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn app:app --timeout 120"
+    startCommand: "gunicorn main:app --timeout 120"
     envVars:
       - key: SECRET_KEY
         generateValue: true
@@ -15,10 +15,4 @@ services:
       - key: ADMIN_PASSWORD
         sync: false
       - key: DATABASE_URL
-        fromDatabase:
-          name: actx-screening-db
-          property: connectionString
-
-databases:
-  - name: actx-screening-db
-    plan: starter
+        sync: false
