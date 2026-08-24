@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Dashboard \u2014 ACTX Screening{% endblock %}
+{% block topbar %}
+<div class="topbar">
+  <div>
+    <h1>Dashboard</h1>
+    <div class="desc">Firm-wide screening activity and status</div>
+  </div>
+  <a href="{{ url_for('screen_single') }}" class="btn">+ New screening</a>
+</div>
+{% endblock %}
+{% block content %}
+
+{% if not api_key_set %}
+<div class="flash error">No OpenSanctions API key is configured on this server yet. Screening will fail until an admin sets the <code>OPENSANCTIONS_API_KEY</code> environment variable.</div>
+{% endif %}
+
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="num">{{ total }}</div>
+    <div class="lbl">Total screenings</div>
+  </div>
+  <div class="stat-card warn">
+    <div class="num">{{ hits }}</div>
+    <div class="lbl">With possible matches</div>
+  </div>
+  <div class="stat-card warn">
+    <div class="num">{{ pending }}</div>
+    <div class="lbl">Awaiting review</div>
+  </div>
+  <div class="stat-card accent">
+    <div class="num">{{ last_30d }}</div>
+    <div class="lbl">Screened in last 30 days</div>
+  </div>
+</div>
+
+<div class="card card-pad" style="margin-bottom:24px;">
+  <div class="section-title">Screening sources</div>
+  <div style="display:flex; gap:32px; flex-wrap:wrap;">
+    <div class="pill-status"><span class="dot dot-green"></span> OpenSanctions API \u2014 460+ sanctions, PEP &amp; watchlist sources</div>
+    <div class="pill-status">
+      <span class="dot {{ 'dot-green' if uae_status.count else 'dot-red' }}"></span>
+      UAE Local Terrorist List \u2014 {{ uae_status.count }} active entries
+      {% if uae_status.updated_at %}<span class="mono" style="color:var(--faint); margin-left:4px;">(updated {{ uae_status.updated_at[:10] }})</span>{% endif %}
+    </div>
+    <div class="pill-status">
+      <span class="dot {{ 'dot-green' if un_status.loaded else 'dot-red' }}"></span>
+      UN Consolidated List \u2014
+      {% if un_status.loaded %}{{ un_status.count }} entries
+        <span class="mono" style="color:var(--faint); margin-left:4px;">(updated {{ un_status.updated_at[:10] }})</span>
+      {% else %}not loaded{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div style="padding:18px 22px 0;">
+    <div class="section-title" style="margin-bottom:2px;">Recent screenings</div>
+  </div>
+  {% if recent %}
+  <table style="margin-top:10px;">
+    <thead><tr><th>Subject</th><th>Type</th><th>Mode</th><th>Result</th><th>Review</th><th>Screened</th><th></th></tr></thead>
+    <tbody>
+      {% for r in recent %}
+      <tr class="row-link" onclick="window.location='{{ url_for('record_detail', record_id=r.id) }}'">
+        <td><strong>{{ r.subject_name }}</strong></td>
+        <td>{{ r.entity_type }}</td>
+        <td>{{ r.mode }}</td>
+        <td>
+          {% if r.result_status == 'Clear' %}<span class="badge-pill badge-clear">Clear</span>
+          {% elif r.result_status == 'Possible hit' %}<span class="badge-pill badge-hit">Possible hit</span>
+          {% else %}<span class="badge-pill badge-review">Needs review</span>{% endif %}
+        </td>
+        <td><span class="badge-pill badge-neutral">{{ r.review_status }}</span></td>
+        <td class="mono" style="color:var(--muted); font-size:12px;">{{ r.created_at.strftime('%d %b, %H:%M') }}</td>
+        <td style="text-align:right; color:var(--blue);">View &rarr;</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <div class="big">No screenings yet</div>
+    <p>Run your first screening to see results here.</p>
+    <a href="{{ url_for('screen_single') }}" class="btn" style="margin-top:8px;">Screen a name</a>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

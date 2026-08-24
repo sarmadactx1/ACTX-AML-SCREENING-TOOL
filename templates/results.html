@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Results \u2014 ACTX Screening{% endblock %}
+{% block topbar %}
+<div class="topbar">
+  <div>
+    <h1>Screening results</h1>
+    <div class="desc">{{ total }} record{{ 's' if total != 1 }}{% if batch %} in this batch{% endif %}</div>
+  </div>
+  <a href="{{ url_for('export_results_csv', q=q, status=status, batch=batch) }}" class="btn secondary">Export CSV</a>
+</div>
+{% endblock %}
+{% block content %}
+
+<form method="get" class="card card-pad" style="margin-bottom:20px; display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
+  <div style="flex:2; min-width:200px;">
+    <label class="field-label">Search</label>
+    <input type="text" name="q" value="{{ q }}" placeholder="Name or reference ID">
+  </div>
+  <div style="flex:1; min-width:150px;">
+    <label class="field-label">Result</label>
+    <select name="status">
+      <option value="" {{ 'selected' if not status }}>All</option>
+      <option value="Clear" {{ 'selected' if status=='Clear' }}>Clear</option>
+      <option value="Needs review" {{ 'selected' if status=='Needs review' }}>Needs review</option>
+      <option value="Possible hit" {{ 'selected' if status=='Possible hit' }}>Possible hit</option>
+    </select>
+  </div>
+  <div style="flex:1; min-width:150px;">
+    <label class="field-label">Review status</label>
+    <select name="review">
+      <option value="" {{ 'selected' if not review }}>All</option>
+      <option value="Pending" {{ 'selected' if review=='Pending' }}>Pending</option>
+      <option value="Cleared" {{ 'selected' if review=='Cleared' }}>Cleared</option>
+      <option value="Escalated" {{ 'selected' if review=='Escalated' }}>Escalated</option>
+      <option value="Reported" {{ 'selected' if review=='Reported' }}>Reported</option>
+    </select>
+  </div>
+  <div style="flex:1; min-width:120px;">
+    <label class="field-label">Mode</label>
+    <select name="mode">
+      <option value="" {{ 'selected' if not mode }}>All</option>
+      <option value="Single" {{ 'selected' if mode=='Single' }}>Single</option>
+      <option value="Bulk" {{ 'selected' if mode=='Bulk' }}>Bulk</option>
+    </select>
+  </div>
+  {% if batch %}<input type="hidden" name="batch" value="{{ batch }}">{% endif %}
+  <button type="submit" class="btn">Filter</button>
+  {% if q or status or review or mode or batch %}<a href="{{ url_for('results') }}" class="btn secondary">Clear</a>{% endif %}
+</form>
+
+<div class="card">
+  {% if records %}
+  <table>
+    <thead><tr><th>Subject</th><th>Type</th><th>Country</th><th>Mode</th><th>Result</th><th>Review</th><th>Matches</th><th>Screened by</th><th>Date</th></tr></thead>
+    <tbody>
+      {% for r in records %}
+      <tr class="row-link" onclick="window.location='{{ url_for('record_detail', record_id=r.id) }}'">
+        <td><strong>{{ r.subject_name }}</strong><div class="mono" style="font-size:11px; color:var(--faint);">{{ r.reference_id }}</div></td>
+        <td>{{ r.entity_type }}</td>
+        <td>{{ r.country or '\u2014' }}</td>
+        <td>{{ r.mode }}</td>
+        <td>
+          {% if r.result_status == 'Clear' %}<span class="badge-pill badge-clear">Clear</span>
+          {% elif r.result_status == 'Possible hit' %}<span class="badge-pill badge-hit">Possible hit</span>
+          {% else %}<span class="badge-pill badge-review">Needs review</span>{% endif %}
+        </td>
+        <td><span class="badge-pill badge-neutral">{{ r.review_status }}</span></td>
+        <td>{{ r.match_count }}</td>
+        <td>{{ r.screened_by.username if r.screened_by else '\u2014' }}</td>
+        <td class="mono" style="color:var(--muted); font-size:12px;">{{ r.created_at.strftime('%d %b %Y, %H:%M') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if total_pages > 1 %}
+  <div style="display:flex; justify-content:center; gap:6px; padding:16px;">
+    {% for p in range(1, total_pages+1) %}
+      <a href="{{ url_for('results', q=q, status=status, review=review, mode=mode, batch=batch, page=p) }}"
+         class="btn small {{ 'secondary' if p != page }}">{{ p }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="empty-state">
+    <div class="big">No results match your filters</div>
+    <p>Try clearing filters, or run a new screening.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

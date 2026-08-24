@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}ACTX Screening Platform{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#2563EB; --blue-dark:#1D4ED8; --blue-pale:#EFF4FF;
+    --ink:#0F172A; --muted:#64748B; --faint:#94A3B8;
+    --paper:#F4F6FA; --card:#FFFFFF; --line:#E4E8F0; --field:#F1F5F9;
+    --hit-bg:#FEF2F2; --hit-text:#B91C1C;
+    --review-bg:#FFFBEB; --review-text:#B45309;
+    --clear-bg:#F0FDF4; --clear-text:#15803D;
+    --sidebar-w: 236px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:'Inter',-apple-system,sans-serif; font-size:14px;
+    -webkit-font-smoothing:antialiased;
+  }
+  code, .mono{ font-family:'JetBrains Mono',monospace; }
+  a{ color:inherit; text-decoration:none; }
+
+  .shell{ display:flex; min-height:100vh; }
+  .sidebar{
+    width:var(--sidebar-w); background:var(--ink); color:#CBD5E1; flex-shrink:0;
+    display:flex; flex-direction:column; position:sticky; top:0; height:100vh;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; padding:20px 20px 16px; }
+  .brand .badge{
+    width:32px; height:32px; border-radius:50%; background:var(--blue);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:12px; color:white; flex-shrink:0;
+  }
+  .brand .name{ font-weight:700; font-size:15px; color:#fff; line-height:1.2; }
+  .brand .sub{ font-size:10.5px; color:#93A3B8; }
+
+  .nav{ padding:8px 12px; display:flex; flex-direction:column; gap:2px; flex:1; }
+  .nav a{
+    display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px;
+    font-size:13.5px; font-weight:500; color:#B7C1D1;
+  }
+  .nav a:hover{ background:#182338; color:#fff; }
+  .nav a.active{ background:var(--blue); color:#fff; font-weight:600; }
+  .nav .icon{ width:16px; text-align:center; opacity:0.9; font-size:13px; }
+
+  .sidebar-foot{ padding:14px 20px 18px; border-top:1px solid #1E293B; font-size:12px; }
+  .sidebar-foot .user{ color:#fff; font-weight:600; margin-bottom:2px; }
+  .sidebar-foot .role{ color:#7C8AA0; text-transform:capitalize; }
+  .sidebar-foot a{ color:#93A3B8; font-size:12px; display:inline-block; margin-top:8px; }
+  .sidebar-foot a:hover{ color:#fff; text-decoration:underline; }
+
+  .main{ flex:1; min-width:0; }
+  .topbar{
+    background:var(--card); border-bottom:1px solid var(--line);
+    padding:16px 32px; display:flex; align-items:center; justify-content:space-between;
+  }
+  .topbar h1{ font-size:18px; margin:0; font-weight:700; }
+  .topbar .desc{ font-size:12.5px; color:var(--muted); margin-top:2px; }
+  .content{ padding:28px 32px 60px; max-width:1180px; }
+
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:12px; }
+  .card-pad{ padding:22px 24px; }
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    background:var(--blue); color:#fff; border:none; border-radius:8px;
+    padding:10px 18px; font-weight:600; font-size:13.5px; cursor:pointer;
+    font-family:inherit; transition:background .12s;
+  }
+  .btn:hover{ background:var(--blue-dark); }
+  .btn.secondary{ background:#fff; color:var(--blue); border:1px solid var(--line); }
+  .btn.secondary:hover{ background:var(--blue-pale); }
+  .btn.small{ padding:6px 12px; font-size:12.5px; }
+  .btn:disabled{ background:#CBD2DC; cursor:not-allowed; }
+
+  label.field-label{
+    display:block; font-size:11px; font-weight:700; color:var(--muted);
+    text-transform:uppercase; letter-spacing:0.04em; margin-bottom:6px;
+  }
+  input[type=text], input[type=password], input[type=date], input[type=file], select, textarea{
+    width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:8px;
+    background:var(--field); font-size:13.5px; font-family:inherit; color:var(--ink);
+  }
+  input:focus, select:focus, textarea:focus{ outline:2px solid var(--blue); outline-offset:1px; background:#fff; }
+
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th{
+    text-align:left; padding:10px 12px; background:var(--blue-pale); color:var(--blue-dark);
+    font-size:11px; text-transform:uppercase; letter-spacing:0.03em; font-weight:700;
+    border-bottom:1px solid var(--line);
+  }
+  td{ padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  tr:last-child td{ border-bottom:none; }
+  tr.row-link:hover{ background:#FAFBFF; cursor:pointer; }
+
+  .badge-pill{
+    display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700;
+  }
+  .badge-hit{ background:var(--hit-bg); color:var(--hit-text); }
+  .badge-review{ background:var(--review-bg); color:var(--review-text); }
+  .badge-clear{ background:var(--clear-bg); color:var(--clear-text); }
+  .badge-neutral{ background:var(--field); color:var(--muted); }
+
+  .code-box{
+    background:var(--blue-pale); border-radius:8px; padding:10px 14px;
+    font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--blue-dark);
+    overflow-x:auto; white-space:nowrap;
+  }
+
+  .flash{ padding:12px 16px; border-radius:8px; font-size:13.5px; margin-bottom:16px; }
+  .flash.error{ background:var(--hit-bg); color:var(--hit-text); border:1px solid #F0C6C6; }
+  .flash.success{ background:var(--clear-bg); color:var(--clear-text); border:1px solid #C9E3CD; }
+
+  .stat-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+  .stat-card{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+  .stat-card .num{ font-size:26px; font-weight:800; line-height:1.1; }
+  .stat-card .lbl{ font-size:12px; color:var(--muted); margin-top:4px; font-weight:600; }
+  .stat-card.accent .num{ color:var(--blue); }
+  .stat-card.warn .num{ color:var(--hit-text); }
+
+  .section-title{ font-size:13px; font-weight:700; color:var(--muted); text-transform:uppercase;
+    letter-spacing:0.04em; margin:0 0 12px; }
+
+  .empty-state{ text-align:center; padding:50px 20px; color:var(--muted); }
+  .empty-state .big{ font-size:15px; font-weight:600; color:var(--ink); margin-bottom:6px; }
+
+  .pill-status{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); }
+  .pill-status .dot{ width:7px; height:7px; border-radius:50%; }
+  .dot-green{ background:var(--clear-text); }
+  .dot-red{ background:var(--hit-text); }
+
+  @media (max-width: 900px){
+    .stat-grid{ grid-template-columns:repeat(2,1fr); }
+    .sidebar{ display:none; }
+    .content{ padding:20px; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  {% if current_user.is_authenticated %}
+  <div class="sidebar">
+    <div class="brand">
+      <div class="badge">OS</div>
+      <div>
+        <div class="name">ACTX Screening</div>
+        <div class="sub">Powered by OpenSanctions</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint=='dashboard' }}"><span class="icon">&#8962;</span> Dashboard</a>
+      <a href="{{ url_for('screen_single') }}" class="{{ 'active' if request.endpoint=='screen_single' }}"><span class="icon">&#128269;</span> Single screening</a>
+      <a href="{{ url_for('screen_bulk') }}" class="{{ 'active' if request.endpoint=='screen_bulk' }}"><span class="icon">&#128203;</span> Bulk screening</a>
+      <a href="{{ url_for('results') }}" class="{{ 'active' if request.endpoint in ['results','record_detail'] }}"><span class="icon">&#128194;</span> Results</a>
+      {% if current_user.user.is_admin %}
+      <a href="{{ url_for('admin_settings') }}" class="{{ 'active' if request.endpoint=='admin_settings' }}"><span class="icon">&#9881;</span> Settings</a>
+      {% endif %}
+    </nav>
+    <div class="sidebar-foot">
+      <div class="user">{{ current_user.user.username }}</div>
+      <div class="role">{{ current_user.user.role }}</div>
+      <a href="{{ url_for('logout') }}">Sign out</a>
+    </div>
+  </div>
+  {% endif %}
+  <div class="main">
+    {% block topbar %}{% endblock %}
+    <div class="content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+</body>
+</html>

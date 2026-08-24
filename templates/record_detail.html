@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}{{ record.subject_name }} \u2014 ACTX Screening{% endblock %}
+{% block topbar %}
+<div class="topbar">
+  <div>
+    <h1>{{ record.subject_name }}</h1>
+    <div class="desc mono">{{ record.reference_id }}</div>
+  </div>
+  <a href="{{ url_for('download_pdf', record_id=record.id) }}" class="btn">Download PDF certificate</a>
+</div>
+{% endblock %}
+{% block content %}
+
+<div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+  {% if record.result_status == 'Clear' %}<span class="badge-pill badge-clear" style="font-size:13px; padding:6px 14px;">Clear \u2014 no matches found</span>
+  {% elif record.result_status == 'Possible hit' %}<span class="badge-pill badge-hit" style="font-size:13px; padding:6px 14px;">{{ record.match_count }} possible hit(s) \u2014 requires review</span>
+  {% else %}<span class="badge-pill badge-review" style="font-size:13px; padding:6px 14px;">{{ record.match_count }} match(es) \u2014 needs review</span>{% endif %}
+  <span class="badge-pill badge-neutral" style="font-size:13px; padding:6px 14px;">Review: {{ record.review_status }}</span>
+</div>
+
+<div class="card card-pad" style="margin-bottom:20px;">
+  <div class="section-title">Subject details</div>
+  <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; font-size:13.5px;">
+    <div><div style="color:var(--muted); font-size:11px; text-transform:uppercase; margin-bottom:3px;">Type</div>{{ record.entity_type }}</div>
+    <div><div style="color:var(--muted); font-size:11px; text-transform:uppercase; margin-bottom:3px;">Country</div>{{ record.country or '\u2014' }}</div>
+    <div><div style="color:var(--muted); font-size:11px; text-transform:uppercase; margin-bottom:3px;">Date of birth</div>{{ record.dob or '\u2014' }}</div>
+    <div><div style="color:var(--muted); font-size:11px; text-transform:uppercase; margin-bottom:3px;">Threshold</div>{{ (record.threshold*100)|int }}%</div>
+    <div><div style="color:var(--muted); font-size:11px; text-transform:uppercase; margin-bottom:3px;">Mode</div>{{ record.mode }}</div>
+    <div><div style="color:var(--muted); font-size:11px; text-transform:uppercase; margin-bottom:3px;">Screened by</div>{{ record.screened_by.username if record.screened_by else '\u2014' }}</div>
+    <div><div style="color:var(--muted); font-size:11px; text-transform:uppercase; margin-bottom:3px;">Date</div>{{ record.created_at.strftime('%d %b %Y, %H:%M') }}</div>
+    <div><div style="color:var(--muted); font-size:11px; text-transform:uppercase; margin-bottom:3px;">Verify online</div>
+      <a href="https://www.opensanctions.org/search/?q={{ record.subject_name|urlencode }}" target="_blank" style="color:var(--blue);">opensanctions.org &#8599;</a>
+    </div>
+  </div>
+</div>
+
+<div class="card card-pad" style="margin-bottom:20px;">
+  <div class="section-title">1. OpenSanctions API</div>
+  {% if not os_matches %}
+    <p style="color:var(--muted); font-size:13.5px;">No matches found.</p>
+  {% else %}
+    <table>
+      <thead><tr><th>Matched entity</th><th>Relevance</th><th>Risk topics</th><th>Source lists</th></tr></thead>
+      <tbody>
+        {% for m in os_matches %}
+        <tr>
+          <td><a href="https://www.opensanctions.org/entities/{{ m.id }}/" target="_blank" style="color:var(--blue); font-weight:600;">{{ m.caption or m.id }}</a></td>
+          <td>{{ (m.score*100)|round|int }}% ({{ risk_label(m.score) }})</td>
+          <td>{{ (m.properties.topics or [])|join(', ') or '\u2014' }}</td>
+          <td>{{ (m.datasets or [])[:3]|join(', ') or '\u2014' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</div>
+
+<div class="card card-pad" style="margin-bottom:20px;">
+  <div class="section-title">2. UAE Local Terrorist List</div>
+  {% if not uae_matches %}
+    <p style="color:var(--muted); font-size:13.5px;">No matches found.</p>
+  {% else %}
+    <table>
+      <thead><tr><th>Matched name</th><th>Relevance</th><th>Classification</th><th>Listing decision</th></tr></thead>
+      <tbody>
+        {% for m in uae_matches %}
+        <tr>
+          <td style="font-weight:600;">{{ m.record.full_name_latin }}</td>
+          <td>{{ (m.score*100)|round|int }}% ({{ risk_label(m.score) }})</td>
+          <td>{{ m.record.classification_en }}</td>
+          <td>{{ m.record.listing_decision_en }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</div>
+
+<div class="card card-pad" style="margin-bottom:20px;">
+  <div class="section-title">3. UN Consolidated Sanctions List</div>
+  {% if not record.un_checked %}
+    <p style="color:var(--muted); font-size:13.5px;">Not checked \u2014 the UN Consolidated List wasn't loaded on the platform at the time of this screening. An admin can load it under Settings.</p>
+  {% elif not un_matches %}
+    <p style="color:var(--muted); font-size:13.5px;">No matches found.</p>
+  {% else %}
+    <table>
+      <thead><tr><th>Matched name</th><th>Relevance</th><th>UN reference</th><th>Sanctions regime</th></tr></thead>
+      <tbody>
+        {% for m in un_matches %}
+        <tr>
+          <td style="font-weight:600;">{{ m.record.full_name }}</td>
+          <td>{{ (m.score*100)|round|int }}% ({{ risk_label(m.score) }})</td>
+          <td>{{ m.record.reference or '\u2014' }}</td>
+          <td>{{ m.record.un_list_type or '\u2014' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</div>
+
+<div class="card card-pad">
+  <div class="section-title">Reviewer sign-off</div>
+  <form method="post" action="{{ url_for('update_review', record_id=record.id) }}">
+    <div style="display:flex; gap:14px; margin-bottom:16px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:180px;">
+        <label class="field-label">Decision</label>
+        <select name="review_status">
+          <option value="Pending" {{ 'selected' if record.review_status=='Pending' }}>Pending</option>
+          <option value="Cleared" {{ 'selected' if record.review_status=='Cleared' }}>Cleared \u2014 no further action</option>
+          <option value="Escalated" {{ 'selected' if record.review_status=='Escalated' }}>Escalated for further review</option>
+          <option value="Reported" {{ 'selected' if record.review_status=='Reported' }}>Reported to UAE FIU</option>
+        </select>
+      </div>
+    </div>
+    <label class="field-label">Notes</label>
+    <textarea name="review_notes" rows="3" style="margin-bottom:16px;">{{ record.review_notes or '' }}</textarea>
+    {% if record.reviewed_by %}
+    <p style="color:var(--muted); font-size:12px; margin:0 0 14px;">
+      Last reviewed by {{ record.reviewed_by.username }} on {{ record.reviewed_at.strftime('%d %b %Y, %H:%M') }}
+    </p>
+    {% endif %}
+    <button type="submit" class="btn">Save review</button>
+  </form>
+</div>
+
+{% endblock %}

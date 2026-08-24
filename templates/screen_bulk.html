@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Bulk screening \u2014 ACTX Screening{% endblock %}
+{% block topbar %}
+<div class="topbar">
+  <div>
+    <h1>Bulk screening</h1>
+    <div class="desc">Screen a client list against both sources at once</div>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="card card-pad" style="max-width:560px;">
+  <form method="post" enctype="multipart/form-data" onsubmit="document.getElementById('submitBtn').disabled=true; document.getElementById('submitBtn').innerText='Screening\u2026';">
+    <label class="field-label">Client list file (.csv or .xlsx)</label>
+    <input type="file" name="file" accept=".csv,.xlsx" required style="margin-bottom:6px;">
+    <p style="color:var(--muted); font-size:12px; margin:0 0 18px;">
+      Columns: <code class="mono">name</code> (required), <code class="mono">schema</code>, <code class="mono">country</code>,
+      <code class="mono">birthDate</code>, <code class="mono">filename</code>. Up to 500 rows per upload.
+    </p>
+
+    <label class="field-label">Match sensitivity</label>
+    <select name="threshold" style="margin-bottom:22px;">
+      <option value="0.5">Broad</option>
+      <option value="0.7" selected>Balanced (recommended)</option>
+      <option value="0.85">Strict</option>
+    </select>
+
+    <button type="submit" class="btn" style="width:100%;" id="submitBtn">Screen all</button>
+  </form>
+</div>
+<p style="color:var(--muted); font-size:12.5px; max-width:560px; margin-top:14px;">
+  Each row is screened against OpenSanctions and the UAE Local Terrorist List, then saved to the results log
+  with its own reference ID and downloadable certificate. Large files may take a few minutes \u2014 keep this tab open.
+</p>
+{% endblock %}

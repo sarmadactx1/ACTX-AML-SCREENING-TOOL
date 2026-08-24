@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Settings \u2014 ACTX Screening{% endblock %}
+{% block topbar %}
+<div class="topbar">
+  <div>
+    <h1>Settings</h1>
+    <div class="desc">Manage screening sources and team access</div>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+
+<div class="card card-pad" style="margin-bottom:20px;">
+  <div class="section-title">OpenSanctions API key</div>
+  <p style="font-size:13.5px; margin:0 0 4px;">
+    Status: {% if api_key_set %}<span class="badge-pill badge-clear">Configured</span>{% else %}<span class="badge-pill badge-hit">Not set</span>{% endif %}
+  </p>
+  <p style="color:var(--muted); font-size:12.5px; margin:6px 0 0;">
+    Set via the <code class="mono">OPENSANCTIONS_API_KEY</code> environment variable on the server \u2014 not stored
+    in the database, and not editable from this page, so it's never exposed to the browser.
+  </p>
+</div>
+
+<div class="card card-pad" style="margin-bottom:20px;">
+  <div class="section-title">UAE Local Terrorist List</div>
+  <p style="font-size:13.5px; margin:0 0 12px;">
+    {{ uae_status.count }} active entries loaded &middot; source file: <span class="mono">{{ uae_status.filename }}</span>
+    {% if uae_status.updated_at %}&middot; updated {{ uae_status.updated_at[:16].replace('T',' ') }} UTC{% endif %}
+  </p>
+  <form method="post" enctype="multipart/form-data" style="display:flex; gap:10px; align-items:end;">
+    <div style="flex:1;">
+      <label class="field-label">Replace with a new CSV export</label>
+      <input type="file" name="uae_list_file" accept=".csv">
+    </div>
+    <button type="submit" class="btn">Upload &amp; replace</button>
+  </form>
+  <p style="color:var(--muted); font-size:12px; margin-top:10px;">
+    Expected columns: category, status, list_row, classification_ar, full_name_latin, family_name_latin,
+    full_name_ar, nationality, dob, place_of_birth, doc_type, doc_number, listing_decision, delisting_decision.
+    Uploading a new file replaces the active list immediately for all users.
+  </p>
+</div>
+
+<div class="card card-pad" style="margin-bottom:20px;">
+  <div class="section-title">UN Consolidated Sanctions List</div>
+  {% if un_status.loaded %}
+    <p style="font-size:13.5px; margin:0 0 12px;">
+      {{ un_status.count }} entries loaded &middot; source file: <span class="mono">{{ un_status.filename }}</span>
+      {% if un_status.updated_at %}&middot; updated {{ un_status.updated_at[:16].replace('T',' ') }} UTC{% endif %}
+    </p>
+  {% else %}
+    <p style="font-size:13.5px; margin:0 0 12px; color:var(--hit-text);">Not loaded yet \u2014 UN Consolidated List checks are skipped until a file is uploaded below.</p>
+  {% endif %}
+  <form method="post" enctype="multipart/form-data" style="display:flex; gap:10px; align-items:end;">
+    <div style="flex:1;">
+      <label class="field-label">Upload the UN list export (.xml or .html)</label>
+      <input type="file" name="un_list_file" accept=".xml,.html,.htm">
+    </div>
+    <button type="submit" class="btn">Upload &amp; replace</button>
+  </form>
+  <p style="color:var(--muted); font-size:12px; margin-top:10px;">
+    Get the current export from <a href="https://scsanctions.un.org/consolidated/" target="_blank" style="color:var(--blue);">scsanctions.un.org/consolidated</a>
+    \u2014 the official XML link on that page works best; the page's HTML/text is also accepted as a fallback.
+    The UN doesn't publish this at a fixed URL our server can fetch automatically, so it needs a periodic manual
+    re-upload here (a good habit: whenever you review the UAE list update, check this one too).
+  </p>
+</div>
+
+<div class="card card-pad">
+  <div class="section-title">Team access</div>
+  <table style="margin-bottom:20px;">
+    <thead><tr><th>Username</th><th>Role</th><th>Added</th></tr></thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.username }}</td>
+        <td><span class="badge-pill badge-neutral">{{ u.role }}</span></td>
+        <td class="mono" style="color:var(--muted); font-size:12px;">{{ u.created_at.strftime('%d %b %Y') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <form method="post" action="{{ url_for('create_user') }}" style="display:flex; gap:10px; align-items:end; flex-wrap:wrap;">
+    <div style="flex:1; min-width:150px;">
+      <label class="field-label">Username</label>
+      <input type="text" name="username" required>
+    </div>
+    <div style="flex:1; min-width:150px;">
+      <label class="field-label">Temporary password</label>
+      <input type="text" name="password" required>
+    </div>
+    <div style="min-width:130px;">
+      <label class="field-label">Role</label>
+      <select name="role">
+        <option value="analyst">Analyst</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <button type="submit" class="btn">Add user</button>
+  </form>
+</div>
+
+{% endblock %}
